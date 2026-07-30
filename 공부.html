@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스마트 몰입 학습 대시보드 v2.0</title>
+  <!-- Google Fonts: Inter & Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Background Glows -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <div class="dashboard-container">
+    <!-- Header Panel: D-Day & Motivation -->
+    <header class="glass-panel header-panel">
+      <div class="dday-section" id="ddaySection" title="클릭하여 D-Day 설정을 변경하세요">
+        <span class="emoji-icon">🎯</span>
+        <div class="dday-info">
+          <span class="dday-title" id="ddayTitle">중요한 시험</span>
+          <span class="dday-badge" id="ddayDays">D-30</span>
+        </div>
+        <button class="icon-btn edit-dday-btn" id="openDdayModalBtn"><i class="fa-solid fa-gear"></i></button>
+      </div>
+      <div class="quote-section">
+        <i class="fa-solid fa-quote-left quote-icon"></i>
+        <p class="quote-text" id="quoteText">오늘 흘린 땀은 내일의 확실한 결과가 된다.</p>
+        <button class="icon-btn refresh-quote-btn" id="refreshQuoteBtn" title="명언 변경"><i class="fa-solid fa-arrows-rotate"></i></button>
+      </div>
+    </header>
+
+    <!-- Subject Navigation Tabs -->
+    <nav class="subject-tabs-container">
+      <button class="tab-btn active" data-subject="all">
+        <span class="tab-emoji">📌</span> 전체
+      </button>
+      <button class="tab-btn" data-subject="korean">
+        <span class="tab-emoji">🇰🇷</span> 국어
+      </button>
+      <button class="tab-btn" data-subject="math">
+        <span class="tab-emoji">📐</span> 수학
+      </button>
+      <button class="tab-btn" data-subject="english">
+        <span class="tab-emoji">🔤</span> 영어
+      </button>
+      <button class="tab-btn" data-subject="science">
+        <span class="tab-emoji">🔬</span> 과학
+      </button>
+      <button class="tab-btn" data-subject="social">
+        <span class="tab-emoji">🌍</span> 사회
+      </button>
+      <button class="tab-btn" data-subject="history">
+        <span class="tab-emoji">📜</span> 역사
+      </button>
+    </nav>
+
+    <!-- Main Workspace Grid -->
+    <main class="dashboard-grid">
+      <!-- Left Column: Timer & Progress -->
+      <section class="left-col">
+        <!-- Pomodoro Timer Card -->
+        <article class="glass-panel card timer-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-stopwatch card-icon-timer"></i> POMODORO TIMER</h3>
+            <span class="timer-status-badge" id="timerStatusBadge">집중 모드</span>
+          </div>
+          
+          <div class="timer-modes">
+            <button class="mode-btn active" data-mode="work">집중 (25분)</button>
+            <button class="mode-btn" data-mode="break">휴식 (5분)</button>
+            <button class="mode-btn" data-mode="custom"><i class="fa-solid fa-sliders"></i> 설정</button>
+          </div>
+
+          <div class="timer-display" id="timerDisplay">25:00</div>
+
+          <div class="timer-controls">
+            <button class="ctrl-btn play-btn" id="timerStartBtn"><i class="fa-solid fa-play"></i> 시작</button>
+            <button class="ctrl-btn pause-btn" id="timerPauseBtn" disabled><i class="fa-solid fa-pause"></i> 일시정지</button>
+            <button class="ctrl-btn reset-btn" id="timerResetBtn"><i class="fa-solid fa-arrow-rotate-left"></i> 초기화</button>
+          </div>
+        </article>
+
+        <!-- Progress Metrics Card -->
+        <article class="glass-panel card progress-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-chart-simple card-icon-progress"></i> ACHIEVEMENT RATE</h3>
+          </div>
+          
+          <div class="progress-section">
+            <div class="progress-info">
+              <span class="progress-label" id="subjectProgressLabel">선택 과목 달성률 (전체)</span>
+              <span class="progress-val" id="subjectProgressVal">0%</span>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" id="subjectProgressBar" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <div class="progress-section">
+            <div class="progress-info">
+              <span class="progress-label">오늘의 전체 통합 달성률</span>
+              <span class="progress-val" id="totalProgressVal">0%</span>
+            </div>
+            <div class="progress-bar-container total-progress-container">
+              <div class="progress-bar-fill total-progress-fill" id="totalProgressBar" style="width: 0%;"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- Right Column: To-Do & YouTube -->
+      <section class="right-col">
+        <!-- Filtered To-Do Card -->
+        <article class="glass-panel card todo-card">
+          <div class="card-header">
+            <h3>
+              <i class="fa-solid fa-list-check card-icon-todo"></i> 
+              <span id="todoSubjectTitle">[📌 전체] 오늘의 공부 목표</span>
+            </h3>
+            <span class="todo-counter" id="todoCounter">0 / 0</span>
+          </div>
+
+          <!-- To-Do Input Row -->
+          <form class="todo-input-form" id="todoForm">
+            <div class="todo-input-wrapper">
+              <!-- Dropdown is visible only when "All" tab is active -->
+              <select id="todoSubjectSelect" class="todo-select" title="과목 선택">
+                <option value="korean">🇰🇷 국어</option>
+                <option value="math">📐 수학</option>
+                <option value="english">🔤 영어</option>
+                <option value="science">🔬 과학</option>
+                <option value="social">🌍 사회</option>
+                <option value="history">📜 역사</option>
+              </select>
+              <input type="text" id="todoInput" placeholder="새로운 공부 할 일 추가..." required autocomplete="off">
+            </div>
+            <button type="submit" class="todo-add-btn"><i class="fa-solid fa-plus"></i></button>
+          </form>
+
+          <!-- To-Do List Container -->
+          <ul class="todo-list" id="todoList">
+            <!-- Dynamic elements will be inserted here -->
+          </ul>
+        </article>
+
+        <!-- YouTube BGM Player Card -->
+        <article class="glass-panel card bgm-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-music card-icon-bgm"></i> YOUTUBE BGM PLAYER</h3>
+          </div>
+
+          <!-- URL Input -->
+          <div class="bgm-input-row">
+            <input type="text" id="bgmUrlInput" placeholder="유튜브 영상 또는 플레이리스트 URL 입력..." autocomplete="off">
+            <button id="bgmPlayBtn" class="bgm-ctrl-btn"><i class="fa-solid fa-play"></i> 재생</button>
+          </div>
+
+          <!-- Presets -->
+          <div class="bgm-presets">
+            <button class="preset-btn" data-url="https://www.youtube.com/watch?v=jfKfPfyJRdk">☕ Lo-Fi Study</button>
+            <button class="preset-btn" data-url="https://www.youtube.com/watch?v=mPZkdNFkNps">🌧️ ASMR 빗소리</button>
+            <button class="preset-btn" data-url="https://www.youtube.com/watch?v=L_LUpnjgPso">🔥 장작 타는 소리</button>
+            <button class="preset-btn" data-url="https://www.youtube.com/watch?v=w772YYhyJ8M">🎹 클래식 피아노</button>
+          </div>
+
+          <!-- Video Embed Frame -->
+          <div class="bgm-player-container">
+            <div id="youtubeEmbedArea" class="youtube-embed-area">
+              <div class="no-video-placeholder">
+                <i class="fa-brands fa-youtube placeholder-youtube-icon"></i>
+                <p>위의 추천 BGM을 재생하거나 유튜브 URL을 입력하세요</p>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <!-- Footer Quote / Status -->
+    <footer class="glass-panel footer-panel">
+      <span class="footer-badge">FOCUS</span>
+      <p class="footer-status-text">🔥 오늘도 끝까지 집중해서 완벽하게 완료하자!</p>
+    </footer>
+  </div>
+
+  <!-- Settings Modals -->
+  <!-- D-Day Settings Modal -->
+  <div class="modal-overlay" id="ddayModal">
+    <div class="glass-panel modal-content">
+      <div class="modal-header">
+        <h3>🎯 D-Day 설정</h3>
+        <button class="close-modal-btn" id="closeDdayModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label for="inputDdayTitle">목표 제목</label>
+          <input type="text" id="inputDdayTitle" placeholder="예: 중요한 시험, 수능, 자격증 시험" value="중요한 시험">
+        </div>
+        <div class="input-group">
+          <label for="inputDdayDate">목표 날짜</label>
+          <input type="date" id="inputDdayDate">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn cancel-btn" id="cancelDdayModal">취소</button>
+        <button class="modal-btn save-btn" id="saveDdayModal">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Timer Modal -->
+  <div class="modal-overlay" id="timerModal">
+    <div class="glass-panel modal-content">
+      <div class="modal-header">
+        <h3>⚙️ 타이머 시간 직접 설정</h3>
+        <button class="close-modal-btn" id="closeTimerModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label for="inputTimerMin">분 (Minutes)</label>
+          <input type="number" id="inputTimerMin" min="1" max="180" value="25">
+        </div>
+        <div class="input-group">
+          <label for="inputTimerSec">초 (Seconds)</label>
+          <input type="number" id="inputTimerSec" min="0" max="59" value="0">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn cancel-btn" id="cancelTimerModal">취소</button>
+        <button class="modal-btn save-btn" id="saveTimerModal">적용</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
