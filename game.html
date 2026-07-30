@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>강화의 탑 (Tower of Enhancement v8.1)</title>
+    <style>
+        :root {
+            --bg-main: #0c0d12;
+            --bg-card: #151821;
+            --bg-card-hover: #1c202c;
+            --bg-element: #1e2230;
+            --border-color: #2a2e3d;
+            --border-glow: #3d445c;
+            
+            --gold-accent: #f1c40f;
+            --gold-glow: rgba(241, 196, 15, 0.3);
+            --red-accent: #e74c3c;
+            --blue-accent: #3498db;
+            --green-accent: #2ecc71;
+            --purple-accent: #9b59b6;
+            --cyan-accent: #00d2d3;
+            
+            --text-primary: #f5f6fa;
+            --text-secondary: #a4b0be;
+            --text-muted: #747d8c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 12px;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 520px;
+            height: 92vh;
+            max-height: 880px;
+            background: #11131a;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        /* --- HUD Header --- */
+        .hud-header {
+            background: #161822;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .resource-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .res-badge {
+            flex: 1;
+            background: #1e2230;
+            border: 1px solid var(--border-color);
+            padding: 6px 10px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .res-badge.gold { color: var(--gold-accent); border-color: rgba(241, 196, 15, 0.3); }
+        .res-badge.frag { color: var(--cyan-accent); border-color: rgba(0, 210, 211, 0.3); }
+        .res-badge.scroll { color: var(--purple-accent); border-color: rgba(155, 89, 182, 0.3); }
+
+        .buff-status {
+            background: linear-gradient(135deg, #2c1a0e, #4a2810);
+            border: 1px solid var(--gold-accent);
+            border-radius: 10px;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 12px var(--gold-glow);
+            transition: all 0.3s;
+        }
+
+        .buff-status.inactive {
+            background: #1a1c27;
+            border-color: var(--border-color);
+            box-shadow: none;
+            opacity: 0.6;
+        }
+
+        .buff-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .buff-timer {
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--gold-accent);
+        }
+
+        /* --- Main Nav Tabs --- */
+        .nav-tabs {
+            display: flex;
+            background: #161822;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 6px;
+        }
+
+        .nav-tab-btn {
+            flex: 1;
+            padding: 12px 0;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab-btn.active {
+            color: var(--gold-accent);
+            border-bottom-color: var(--gold-accent);
+            background: rgba(241, 196, 15, 0.04);
+        }
+
+        /* --- Main Viewport --- */
+        .view-container {
+            flex: 1;
+            padding: 14px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #0f1118;
+        }
+
+        .view-container::-webkit-scrollbar {
+            width: 5px;
+        }
+        .view-container::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .tab-page {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        .tab-page.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Weapon Stage Card --- */
+        .weapon-stage-card {
+            background: linear-gradient(180deg, #1d212f 0%, #151822 100%);
+            border: 1px solid var(--border-glow);
+            border-radius: 16px;
+            padding: 18px 14px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Tier Glow Effects */
+        .tier-glow-1 { border-color: #7f8c8d; box-shadow: 0 0 15px rgba(127, 140, 141, 0.2); }
+        .tier-glow-2 { border-color: #3498db; box-shadow: 0 0 20px rgba(52, 152, 219, 0.3); }
+        .tier-glow-3 { border-color: #e67e22; box-shadow: 0 0 25px rgba(230, 126, 34, 0.4); }
+        .tier-glow-4 { border-color: #9b59b6; box-shadow: 0 0 25px rgba(155, 89, 182, 0.4); }
+        .tier-glow-5 { border-color: #f1c40f; box-shadow: 0 0 30px rgba(241, 196, 15, 0.5); }
+
+        .weapon-avatar {
+            width: 80px;
+            height: 80px;
+            background: #11131a;
+            border-radius: 50%;
+            border: 2px solid var(--border-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+            position: relative;
+            margin-bottom: 2px;
+            animation: floatAnim 3s ease-in-out infinite;
+        }
+
+        @keyframes floatAnim {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .weapon-name {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+
+        .weapon-stat-badge {
+            background: #1e2230;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .pass-chip {
+            background: linear-gradient(90deg, #8e44ad, #3498db);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(142, 68, 173, 0.4);
+        }
+
+        /* --- Panel Cards --- */
+        .panel-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .stat-item {
+            background: #1a1d29;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #25293a;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-item .lbl {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .stat-item .val {
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
+        .btn-gold { background: linear-gradient(135deg, #f1c40f, #d35400); color: #000; }
+        .btn-red { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
+        .btn-blue { background: linear-gradient(135deg, #3498db, #2980b9); color: #fff; }
+        .btn-purple { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #fff; }
+        .btn-green { background: linear-gradient(135deg, #2ecc71, #27ae60); color: #fff; }
+        .btn-dark { background: #222634; color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-disabled { background: #282c39 !important; color: #5a6275 !important; cursor: not-allowed; box-shadow: none; transform: none !important; }
+
+        /* --- Inventory Sub tabs --- */
+        .sub-tab-group {
+            display: flex;
+            background: #1a1d28;
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .sub-tab-btn {
+            flex: 1;
+            padding: 8px 0;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sub-tab-btn.active {
+            background: var(--blue-accent);
+            color: #fff;
+        }
+
+        .item-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .item-slot {
+            background: #181b26;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 8px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .item-slot:hover {
+            border-color: var(--blue-accent);
+            background: #202433;
+        }
+
+        .item-slot.equipped {
+            border: 2px solid var(--gold-accent);
+            background: #272317;
+            box-shadow: inset 0 0 10px rgba(241, 196, 15, 0.2);
+        }
+
+        .item-slot .icon {
+            font-size: 26px;
+        }
+
+        .item-slot .lvl-tag {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--gold-accent);
+        }
+
+        .item-slot .eq-badge {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            background: var(--gold-accent);
+            color: #000;
+            font-size: 9px;
+            font-weight: 900;
+            padding: 1px 4px;
+            border-radius: 4px;
+        }
+
+        /* --- List Row Items (Shop & Dungeon) --- */
+        .list-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .list-card.locked {
+            opacity: 0.5;
+            filter: grayscale(0.7);
+        }
+
+        .list-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .list-title {
+            font-size: 14px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .list-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* --- Log Window --- */
+        .log-container {
+            background: #0a0b10;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 12px;
+            height: 95px;
+            overflow-y: auto;
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .log-container::-webkit-scrollbar { width: 4px; }
+        .log-container::-webkit-scrollbar-thumb { background: #222634; border-radius: 2px; }
+
+        .log-entry { display: flex; gap: 4px; }
+        .log-success { color: var(--green-accent); }
+        .log-crit { color: var(--gold-accent); font-weight: 800; }
+        .log-fail { color: var(--red-accent); }
+
+        /* Banner FX */
+        .crit-banner {
+            display: none;
+            background: linear-gradient(90deg, #ff0055, #f1c40f);
+            color: #000;
+            font-weight: 900;
+            text-align: center;
+            padding: 8px;
+            border-radius: 10px;
+            font-size: 14px;
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.6);
+            animation: pulseGlow 0.4s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            from { transform: scale(0.98); }
+            to { transform: scale(1.02); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- Top HUD Header -->
+    <div class="hud-header">
+        <div class="resource-bar">
+            <div class="res-badge gold">💰 <span id="hud-gold">1,000,000</span></div>
+            <div class="res-badge frag">💎 <span id="hud-frags">0</span></div>
+            <div class="res-badge scroll">🛡️ <span id="hud-scrolls">0</span></div>
+        </div>
+        <div id="buff-banner" class="buff-status inactive">
+            <div class="buff-info">
+                <span>🧪</span>
+                <span id="buff-text">행운 버프 비활성화</span>
+            </div>
+            <div id="buff-timer" class="buff-timer">00:00</div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <div class="nav-tabs">
+        <button class="nav-tab-btn active" onclick="switchPage('enhance')">
+            <span style="font-size:16px;">⚔️</span>
+            <span>강화실</span>
+        </button>
+        <button class="nav-tab-btn" onclick="switchPage('dungeon')">
+            <span style="font-size:16px;">🏰</span>
+            <span>던전</span>
+        </button>
+        <button class="nav-tab-btn" onclick="switchPage('inventory')">
+            <span style="font-size:16px;">🎒</span>
+            <span>인벤토리</span>
+        </button>
+        <button class="nav-tab-btn" onclick="switchPage('shop')">
+            <span style="font-size:16px;">🛒</span>
+            <span>상점</span>
+        </button>
+    </div>
+
+    <!-- Main Viewport -->
+    <div class="view-container">
+
+        <!-- 1. ENHANCE PAGE -->
+        <div id="page-enhance" class="tab-page active">
+            <div id="crit-fx" class="crit-banner">🔥 CRITICAL ENHANCEMENT!! 🔥</div>
+
+            <div class="weapon-stage-card tier-glow-1" id="weapon-stage-box">
+                <div class="weapon-avatar" id="enh-wpn-icon">🗡️</div>
+                <div class="weapon-name" id="enh-wpn-title">+0 녹슨 훈련용 단검</div>
+                <div class="weapon-stat-badge" id="enh-wpn-stat">공격력: 10</div>
+                <div id="enh-pass-tag" class="pass-chip" style="display:none;">⚡ 진화 패스 발동 (던전 쿨타임 무시 1회)</div>
+            </div>
+
+            <div class="panel-card">
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <span class="lbl">성공 확률</span>
+                        <span class="val" id="rate-success" style="color:var(--green-accent);">100%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="lbl">크리티컬 (+2~+3)</span>
+                        <span class="val" id="rate-crit" style="color:var(--gold-accent);">0%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="lbl">파손 확률</span>
+                        <span class="val" id="rate-dest" style="color:var(--red-accent);">0%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="lbl">필요 방지권</span>
+                        <span class="val" id="req-scrolls">0장</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 2px; font-size:12px;">
+                    <span style="color:var(--text-secondary);">소모 골드: <strong id="req-gold" style="color:var(--gold-accent);">1,000 G</strong></span>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                        <input type="checkbox" id="use-scroll-check" checked style="accent-color:var(--purple-accent);">
+                        <span>방지권 자동 사용</span>
+                    </label>
+                </div>
+
+                <button class="btn btn-purple" onclick="useLuckPotion()">
+                    🧪 행운 포션 사용 (보유: <span id="quick-potion-cnt">0</span>개)
+                </button>
+                <button class="btn btn-red" id="btn-do-enhance" onclick="doEnhance()" style="font-size:15px; padding:14px;">
+                    🔥 강화 도전하기
+                </button>
+            </div>
+
+            <div class="log-container" id="enhance-log">
+                <div class="log-entry">⚔️ 강화의 탑 v8.1에 오신 것을 환영합니다!</div>
+            </div>
+        </div>
+
+        <!-- 2. DUNGEON PAGE -->
+        <div id="page-dungeon" class="tab-page">
+            <div style="font-size:11px; color:var(--text-secondary); background:#181b26; padding:8px 12px; border-radius:8px; border:1px solid var(--border-color);">
+                💡 장착 중인 무기의 강화도 구간에 맞는 던전만 진입할 수 있습니다.<br>
+                💡 기본 쿨타임 20초 (무기 진화 시 1회 즉시 진입 가능)
+            </div>
+
+            <div id="dungeon-list" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Dynamic dungeons -->
+            </div>
+        </div>
+
+        <!-- 3. INVENTORY PAGE -->
+        <div id="page-inventory" class="tab-page">
+            <div class="sub-tab-group">
+                <button class="sub-tab-btn active" id="subtab-wpn" onclick="switchInvTab('wpn')">⚔️ 검 / 무기 (<span id="inv-wpn-cnt">0</span>/50)</button>
+                <button class="sub-tab-btn" id="subtab-box" onclick="switchInvTab('box')">📦 상자 / 소모품</button>
+            </div>
+
+            <!-- Tab 1: Weapon Tab -->
+            <div id="inv-section-wpn" style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 12px; color: var(--text-secondary);">보유 무기 클릭 시 즉시 장착</span>
+                    <button class="btn btn-dark" style="padding: 5px 10px; font-size: 11px;" onclick="sellLowGradeWeapons()">+0~+3 무기 일괄 판매</button>
+                </div>
+                <div class="item-grid" id="wpn-grid">
+                    <!-- Dynamic weapon grid -->
+                </div>
+            </div>
+
+            <!-- Tab 2: Boxes & Consumables -->
+            <div id="inv-section-box" style="display: none; flex-direction: column; gap: 10px;">
+                <div class="list-card">
+                    <div class="list-info">
+                        <div class="list-title">🧪 행운의 성수 (포션)</div>
+                        <div class="list-sub">3분간 강화성공/크리/드랍률 대폭 상승</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span id="inv-potion-cnt" style="font-weight:800; font-size:13px;">0개</span>
+                        <button class="btn btn-purple" style="padding:6px 10px; font-size:12px;" onclick="useLuckPotion()">사용</button>
+                    </div>
+                </div>
+
+                <div class="list-card">
+                    <div class="list-info">
+                        <div class="list-title">🛡️ 무기 파손 방지권</div>
+                        <div class="list-sub">강화 실패 시 무기 완전 소멸 방지</div>
+                    </div>
+                    <span id="inv-scroll-cnt" style="font-weight:800; font-size:13px;">0장</span>
+                </div>
+
+                <div class="list-card">
+                    <div class="list-info">
+                        <div class="list-title">💎 무기 파편</div>
+                        <div class="list-sub">파손 시 부산물로 획득 / 교환 재화</div>
+                    </div>
+                    <span id="inv-frag-cnt" style="font-weight:800; font-size:13px;">0개</span>
+                </div>
+
+                <div style="font-size:13px; font-weight:800; color:var(--gold-accent); margin-top:4px;">📦 보유 강화 무기 상자</div>
+                <div id="box-list" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Dynamic Box List -->
+                </div>
+                <button class="btn btn-green" onclick="openAllBoxes()">★ 보유 상자 전체 일괄 개봉 ★</button>
+            </div>
+        </div>
+
+        <!-- 4. SHOP PAGE -->
+        <div id="page-shop" class="tab-page">
+            <div style="font-size:13px; font-weight:800; color:var(--gold-accent);">🧪 소모품 및 방지권</div>
+            <div class="list-card">
+                <div class="list-info">
+                    <div class="list-title">🧪 행운의 성수 (포션)</div>
+                    <div class="list-sub">3분간 행운 버프 발동</div>
+                </div>
+                <button class="btn btn-gold" style="padding:8px 12px; font-size:12px;" onclick="buyItem('potion')">100,000 G</button>
+            </div>
+            <div class="list-card">
+                <div class="list-info">
+                    <div class="list-title">🛡️ 파손 방지권 1장</div>
+                    <div class="list-sub">무기 소멸 방지</div>
+                </div>
+                <button class="btn btn-gold" style="padding:8px 12px; font-size:12px;" onclick="buyItem('scroll1')">50,000 G</button>
+            </div>
+            <div class="list-card">
+                <div class="list-info">
+                    <div class="list-title">🛡️ 방지권 10장 패키지</div>
+                    <div class="list-sub">10% 할인 혜택</div>
+                </div>
+                <button class="btn btn-gold" style="padding:8px 12px; font-size:12px;" onclick="buyItem('scroll10')">450,000 G</button>
+            </div>
+
+            <div style="font-size:13px; font-weight:800; color:var(--gold-accent); margin-top:6px;">⚔️ 무기 상점 (파손 재구매용)</div>
+            <div class="list-card">
+                <div class="list-info">
+                    <div class="list-title">🗡️ 녹슨 훈련용 단검 (+0)</div>
+                    <div class="list-sub">파손 시 빠른 재도전 기본 무기</div>
+                </div>
+                <button class="btn btn-gold" style="padding:8px 12px; font-size:12px;" onclick="buyItem('wpn0')">5,000 G</button>
+            </div>
+            <div class="list-card">
+                <div class="list-info">
+                    <div class="list-title">⚔️ 강철 기사 장검 (+4)</div>
+                    <div class="list-sub">2구역 즉시 진입 완료형 무기</div>
+                </div>
+                <button class="btn btn-gold" style="padding:8px 12px; font-size:12px;" onclick="buyItem('wpn4')">150,000 G</button>
+            </div>
+            <div class="list-card">
+                <div class="list-info">
+                    <div class="list-title">🎁 랜덤 무기 상자 (1~3구역)</div>
+                    <div class="list-sub">+1 ~ +9강 무기 무작위 획득</div>
+                </div>
+                <button class="btn btn-gold" style="padding:8px 12px; font-size:12px;" onclick="buyItem('random_box')">500,000 G</button>
+            </div>
+
+            <div style="font-size:13px; font-weight:800; color:var(--gold-accent); margin-top:6px;">💎 무기 파편 교환소</div>
+            <div class="list-card">
+                <div class="list-info">
+                    <div class="list-title">🛡️ 무기 파손 방지권 1장</div>
+                    <div class="list-sub">파편 10개 필요</div>
+                </div>
+                <button class="btn btn-blue" style="padding:8px 12px; font-size:12px;" onclick="exchangeFrag('scroll')">교환 (10개)</button>
+            </div>
+            <div class="list-card">
+                <div class="list-info">
+                    <div class="list-title">💰 대량 골드 주머니 (50만 G)</div>
+                    <div class="list-sub">파편 50개 필요</div>
+                </div>
+                <button class="btn btn-blue" style="padding:8px 12px; font-size:12px;" onclick="exchangeFrag('gold')">교환 (50개)</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    /* 데이터 및 강화 확률표 (v8.1) */
+    const ENHANCE_TABLE = [
+        /* +0->+1 */  { rate: 100, crit: 0,  dest: 0,  scroll: 0, cost: 1000 },
+        /* +1->+2 */  { rate: 100, crit: 15, dest: 0,  scroll: 0, cost: 2000 },
+        /* +2->+3 */  { rate: 95,  crit: 15, dest: 0,  scroll: 0, cost: 5000 },
+        /* +3->+4 */  { rate: 90,  crit: 15, dest: 0,  scroll: 0, cost: 10000 },
+        /* +4->+5 */  { rate: 85,  crit: 12, dest: 0,  scroll: 1, cost: 20000 },
+        /* +5->+6 */  { rate: 75,  crit: 12, dest: 5,  scroll: 1, cost: 35000 },
+        /* +6->+7 */  { rate: 65,  crit: 12, dest: 10, scroll: 2, cost: 50000 },
+        /* +7->+8 */  { rate: 55,  crit: 10, dest: 15, scroll: 2, cost: 80000 },
+        /* +8->+9 */  { rate: 45,  crit: 10, dest: 20, scroll: 3, cost: 120000 },
+        /* +9->+10 */ { rate: 40,  crit: 10, dest: 25, scroll: 3, cost: 180000 },
+        /* +10->+11 */{ rate: 35,  crit: 10, dest: 30, scroll: 5, cost: 250000 },
+        /* +11->+12 */{ rate: 30,  crit: 8,  dest: 35, scroll: 5, cost: 350000 },
+        /* +12->+13 */{ rate: 25,  crit: 8,  dest: 40, scroll: 8, cost: 500000 },
+        /* +13->+14 */{ rate: 20,  crit: 8,  dest: 45, scroll: 10, cost: 750000 },
+        /* +14->+15 */{ rate: 15,  crit: 5,  dest: 50, scroll: 15, cost: 1000000 },
+        /* +15->+16 */{ rate: 12,  crit: 0,  dest: 55, scroll: 20, cost: 1500000 },
+        /* +16->+17 */{ rate: 10,  crit: 0,  dest: 60, scroll: 30, cost: 2000000 },
+        /* +17->+18 */{ rate: 7,   crit: 0,  dest: 65, scroll: 40, cost: 3000000 },
+        /* +18->+19 */{ rate: 5,   crit: 0,  dest: 70, scroll: 60, cost: 4500000 },
+        /* +19->+20 */{ rate: 3,   crit: 0,  dest: 75, scroll: 100, cost: 6000000 }
+    ];
+
+    const DUNGEON_TABLE = [
+        { zone: 1, name: "1구역 (초급)", minLvl: 0, maxLvl: 3, gold: 5000, baseDrop: 15, boxRange: [1, 3] },
+        { zone: 2, name: "2구역 (중급)", minLvl: 4, maxLvl: 8, gold: 25000, baseDrop: 20, boxRange: [3, 6] },
+        { zone: 3, name: "3구역 (상급)", minLvl: 9, maxLvl: 12, gold: 100000, baseDrop: 25, boxRange: [6, 9] },
+        { zone: 4, name: "4구역 (최상급)", minLvl: 13, maxLvl: 16, gold: 500000, baseDrop: 30, boxRange: [9, 12] },
+        { zone: 5, name: "5구역 (신화)", minLvl: 17, maxLvl: 20, gold: 2500000, baseDrop: 35, boxRange: [12, 15] }
+    ];
+
+    /* 게임 상태 정보 */
+    let state = {
+        gold: 1000000,
+        fragments: 0,
+        scrolls: 0,
+        potions: 0,
+        buffTime: 0,
+        dungeonCd: 0,
+        hasPass: false,
+        equippedId: null,
+        weapons: [],
+        boxes: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+    };
+
+    let nextWpnId = 1;
+
+    /* 무기 정보 & 이모지 반환 */
+    function getWeaponInfo(level) {
+        let name = "";
+        let icon = "🗡️";
+        let atk = 0;
+        let tier = 1;
+
+        if (level <= 3) {
+            name = (level === 0) ? "녹슨 훈련용 단검" : "훈련용 단검";
+            icon = (level === 0) ? "🗡️" : "🔪";
+            atk = 10 + level * 15;
+            tier = 1;
+        } else if (level <= 8) {
+            name = "강철 기사 장검";
+            icon = "⚔️";
+            atk = 100 + (level - 4) * 50;
+            tier = 2;
+        } else if (level <= 12) {
+            name = "화룡의 대검";
+            icon = "🗡️🔥";
+            atk = 500 + (level - 9) * 200;
+            tier = 3;
+        } else if (level <= 16) {
+            name = "천공의 뇌신창";
+            icon = "⚡🔱";
+            atk = 2000 + (level - 13) * 1000;
+            tier = 4;
+        } else {
+            name = "신화의 종말검";
+            icon = "🌟⚔️✨";
+            atk = 10000 + (level - 17) * 5000;
+            tier = 5;
+        }
+
+        return { name: `+${level} ${name}`, rawName: name, icon, atk, tier, level };
+    }
+
+    function createWeapon(level) {
+        const id = nextWpnId++;
+        const wpn = { id, level };
+        state.weapons.push(wpn);
+        return wpn;
+    }
+
+    function initGame() {
+        const startWpn = createWeapon(0);
+        state.equippedId = startWpn.id;
+
+        setInterval(tick, 1000);
+
+        renderHUD();
+        renderEnhancePage();
+        renderDungeons();
+        renderInventory();
+    }
+
+    function tick() {
+        if (state.buffTime > 0) state.buffTime--;
+        if (state.dungeonCd > 0) state.dungeonCd--;
+        renderHUD();
+        updateDungeonTimerUI();
+    }
+
+    function log(msg, type = '') {
+        const logBox = document.getElementById('enhance-log');
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type}`;
+        entry.innerHTML = `<span>[${new Date().toLocaleTimeString().split(' ')[0]}]</span> <span>${msg}</span>`;
+        logBox.appendChild(entry);
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function getEquippedWeapon() {
+        return state.weapons.find(w => w.id === state.equippedId) || null;
+    }
+
+    /* 화면 렌더링 */
+    function renderHUD() {
+        document.getElementById('hud-gold').innerText = state.gold.toLocaleString();
+        document.getElementById('hud-frags').innerText = state.fragments;
+        document.getElementById('hud-scrolls').innerText = state.scrolls;
+
+        const buffBanner = document.getElementById('buff-banner');
+        const buffText = document.getElementById('buff-text');
+        const buffTimer = document.getElementById('buff-timer');
+
+        if (state.buffTime > 0) {
+            buffBanner.className = 'buff-status';
+            buffText.innerText = '행운 버프 (성공률+5%, 크리2배, 드랍률+10%)';
+            const m = String(Math.floor(state.buffTime / 60)).padStart(2, '0');
+            const s = String(state.buffTime % 60).padStart(2, '0');
+            buffTimer.innerText = `${m}:${s}`;
+        } else {
+            buffBanner.className = 'buff-status inactive';
+            buffText.innerText = '행운 버프 비활성화 (포션 필요)';
+            buffTimer.innerText = '00:00';
+        }
+
+        document.getElementById('quick-potion-cnt').innerText = state.potions;
+        document.getElementById('inv-potion-cnt').innerText = `${state.potions}개`;
+        document.getElementById('inv-scroll-cnt').innerText = `${state.scrolls}장`;
+        document.getElementById('inv-frag-cnt').innerText = `${state.fragments}개`;
+        document.getElementById('inv-wpn-cnt').innerText = state.weapons.length;
+    }
+
+    function renderEnhancePage() {
+        const eq = getEquippedWeapon();
+        const stageBox = document.getElementById('weapon-stage-box');
+        const passTag = document.getElementById('enh-pass-tag');
+
+        if (!eq) {
+            document.getElementById('enh-wpn-icon').innerText = '❓';
+            document.getElementById('enh-wpn-title').innerText = "장착 무기 없음";
+            document.getElementById('enh-wpn-stat').innerText = "상점/인벤토리에서 무기를 장착하세요";
+            passTag.style.display = 'none';
+            document.getElementById('btn-do-enhance').classList.add('btn-disabled');
+            stageBox.className = 'weapon-stage-card tier-glow-1';
+            return;
+        }
+
+        document.getElementById('btn-do-enhance').classList.remove('btn-disabled');
+        const info = getWeaponInfo(eq.level);
+
+        document.getElementById('enh-wpn-icon').innerText = info.icon;
+        document.getElementById('enh-wpn-title').innerText = info.name;
+        document.getElementById('enh-wpn-stat').innerText = `공격력: ${info.atk.toLocaleString()}`;
+
+        stageBox.className = `weapon-stage-card tier-glow-${info.tier}`;
+
+        passTag.style.display = state.hasPass ? 'inline-block' : 'none';
+
+        if (eq.level >= 20) {
+            document.getElementById('rate-success').innerText = 'MAX';
+            document.getElementById('rate-crit').innerText = 'MAX';
+            document.getElementById('rate-dest').innerText = '0%';
+            document.getElementById('req-scrolls').innerText = '-';
+            document.getElementById('req-gold').innerText = '-';
+            return;
+        }
+
+        const tData = ENHANCE_TABLE[eq.level];
+        const isBuff = state.buffTime > 0;
+
+        const succRate = Math.min(100, tData.rate + (isBuff ? 5 : 0));
+        const critRate = isBuff ? (tData.crit * 2) : tData.crit;
+
+        document.getElementById('rate-success').innerText = `${succRate}% ${isBuff ? '(+5%)' : ''}`;
+        document.getElementById('rate-crit').innerText = `${critRate}% ${isBuff && critRate > 0 ? '(2배)' : ''}`;
+        document.getElementById('rate-dest').innerText = `${tData.dest}%`;
+        document.getElementById('req-scrolls').innerText = `${tData.scroll}장`;
+        document.getElementById('req-gold').innerText = `${tData.cost.toLocaleString()} G`;
+    }
+
+    /* 강화 실행 */
+    function doEnhance() {
+        const eq = getEquippedWeapon();
+        if (!eq) return alert("강화할 무기가 장착되어 있지 않습니다!");
+        if (eq.level >= 20) return alert("최대 강화 단계(+20)에 도달했습니다!");
+
+        const tData = ENHANCE_TABLE[eq.level];
+        if (state.gold < tData.cost) return alert("골드가 부족합니다!");
+
+        const useScroll = document.getElementById('use-scroll-check').checked;
+        if (tData.scroll > 0 && useScroll && state.scrolls < tData.scroll) {
+            return alert(`파손 방지권이 부족합니다! (필요: ${tData.scroll}장)`);
+        }
+
+        state.gold -= tData.cost;
+        if (tData.scroll > 0 && useScroll) {
+            state.scrolls -= tData.scroll;
+        }
+
+        const isBuff = state.buffTime > 0;
+        const succRate = Math.min(100, tData.rate + (isBuff ? 5 : 0));
+        const critRate = isBuff ? (tData.crit * 2) : tData.crit;
+
+        const rollSucc = Math.random() * 100;
+        const oldTier = getWeaponInfo(eq.level).tier;
+
+        const critFx = document.getElementById('crit-fx');
+        critFx.style.display = 'none';
+
+        if (rollSucc <= succRate) {
+            let levelUp = 1;
+            let isCrit = false;
+
+            if (eq.level < 15 && critRate > 0) {
+                if (Math.random() * 100 <= critRate) {
+                    isCrit = true;
+                    levelUp = Math.random() < 0.7 ? 2 : 3;
+                }
+            }
+
+            eq.level = Math.min(20, eq.level + levelUp);
+            const newInfo = getWeaponInfo(eq.level);
+
+            if (isCrit) {
+                critFx.innerText = `🔥 CRITICAL ENHANCEMENT! (+${levelUp}단계 대폭발!) 🔥`;
+                critFx.style.display = 'block';
+                log(`강화 대성공(크리티컬)! ${newInfo.icon} [${newInfo.name}] 달성! (+${levelUp}단계)`, 'log-crit');
+            } else {
+                log(`강화 성공! ${newInfo.icon} [${newInfo.name}] 달성!`, 'log-success');
+            }
+
+            if (newInfo.tier > oldTier) {
+                state.hasPass = true;
+                state.dungeonCd = 0;
+                log(`⚡ 무기 외형 진화! '무기 진화 패스' 활성화 (던전 쿨타임 무시 1회)`, 'log-crit');
+            }
+
+        } else {
+            const rollDest = Math.random() * 100;
+            if (rollDest <= tData.dest) {
+                if (useScroll && tData.scroll > 0) {
+                    log(`강화 실패! 하지만 파손 방지권으로 무기가 보호되었습니다.`, 'log-fail');
+                } else {
+                    const fragsGained = Math.floor(Math.random() * 6) + 5;
+                    state.fragments += fragsGained;
+
+                    log(`💥 무기 파손!! [${getWeaponInfo(eq.level).name}] 삭제됨. (파편 +${fragsGained}개)`, 'log-fail');
+
+                    state.weapons = state.weapons.filter(w => w.id !== eq.id);
+                    state.equippedId = state.weapons.length > 0 ? state.weapons[0].id : null;
+                }
+            } else {
+                log(`강화 실패! (무기 단계 유지)`, 'log-fail');
+            }
+        }
+
+        renderHUD();
+        renderEnhancePage();
+        renderInventory();
+    }
+
+    function useLuckPotion() {
+        if (state.potions <= 0) return alert("행운 포션이 없습니다! 상점에서 구매하세요.");
+        state.potions--;
+        state.buffTime = Math.min(900, state.buffTime + 180);
+        log(`🧪 행운 포션 사용! 3분간 행운 버프가 활성화됩니다.`, 'log-crit');
+        renderHUD();
+        renderEnhancePage();
+    }
+
+    /* 던전 로직 */
+    function renderDungeons() {
+        const list = document.getElementById('dungeon-list');
+        list.innerHTML = '';
+        const eq = getEquippedWeapon();
+        const curLvl = eq ? eq.level : -1;
+
+        DUNGEON_TABLE.forEach(d => {
+            const isBuff = state.buffTime > 0;
+            const dropRate = d.baseDrop + (isBuff ? 10 : 0);
+            const isMatch = (curLvl >= d.minLvl && curLvl <= d.maxLvl);
+
+            const card = document.createElement('div');
+            card.className = `list-card ${isMatch ? '' : 'locked'}`;
+
+            card.innerHTML = `
+                <div class="list-info">
+                    <div class="list-title">🏰 ${d.name}</div>
+                    <div class="list-sub">입장 무기: +${d.minLvl} ~ +${d.maxLvl}강</div>
+                    <div class="list-sub" style="color:var(--text-primary); font-weight:700;">
+                        보상: ${d.gold.toLocaleString()} G | 상자 드랍: ${dropRate}%
+                    </div>
+                </div>
+                <div>
+                    <button class="btn ${isMatch ? 'btn-green' : 'btn-disabled'}" 
+                            id="btn-dungeon-${d.zone}"
+                            style="padding:8px 12px; font-size:12px;"
+                            onclick="enterDungeon(${d.zone})">
+                        ${isMatch ? '입장하기' : '미달'}
+                    </button>
+                </div>
+            `;
+            list.appendChild(card);
+        });
+        updateDungeonTimerUI();
+    }
+
+    function updateDungeonTimerUI() {
+        DUNGEON_TABLE.forEach(d => {
+            const btn = document.getElementById(`btn-dungeon-${d.zone}`);
+            if (!btn) return;
+
+            const eq = getEquippedWeapon();
+            const curLvl = eq ? eq.level : -1;
+            const isMatch = (curLvl >= d.minLvl && curLvl <= d.maxLvl);
+
+            if (!isMatch) return;
+
+            if (state.hasPass) {
+                btn.innerText = "⚡ 패스입장";
+                btn.className = "btn btn-purple";
+            } else if (state.dungeonCd > 0) {
+                btn.innerText = `쿨타임 (${state.dungeonCd}s)`;
+                btn.className = "btn btn-disabled";
+            } else {
+                btn.innerText = "입장하기";
+                btn.className = "btn btn-green";
+            }
+        });
+    }
+
+    function enterDungeon(zoneId) {
+        const eq = getEquippedWeapon();
+        if (!eq) return alert("무기를 장착해야 합니다!");
+
+        const d = DUNGEON_TABLE.find(x => x.zone === zoneId);
+        if (eq.level < d.minLvl || eq.level > d.maxLvl) {
+            return alert(`현재 장착 무기(+${eq.level})로는 이 던전에 입장할 수 없습니다.`);
+        }
+
+        if (!state.hasPass && state.dungeonCd > 0) {
+            return alert(`던전 쿨타임 중입니다. (${state.dungeonCd}초 남음)`);
+        }
+
+        if (state.hasPass) {
+            state.hasPass = false;
+            log(`⚡ 진화 패스로 쿨타임 없이 던전에 즉시 입장했습니다!`, 'log-crit');
+        } else {
+            state.dungeonCd = 20;
+        }
+
+        state.gold += d.gold;
+        const isBuff = state.buffTime > 0;
+        const dropRate = d.baseDrop + (isBuff ? 10 : 0);
+
+        let msg = `${d.name} 공략 클리어! +${d.gold.toLocaleString()} Gold`;
+
+        if (Math.random() * 100 <= dropRate) {
+            state.boxes[zoneId] = (state.boxes[zoneId] || 0) + 1;
+            msg += ` 📦 [${zoneId}구역 상자] 드랍!`;
+        }
+
+        log(msg, 'log-success');
+        renderHUD();
+        renderEnhancePage();
+        renderDungeons();
+        renderInventory();
+    }
+
+    /* 인벤토리 로직 */
+    function switchInvTab(tab) {
+        document.getElementById('subtab-wpn').classList.toggle('active', tab === 'wpn');
+        document.getElementById('subtab-box').classList.toggle('active', tab === 'box');
+        document.getElementById('inv-section-wpn').style.display = (tab === 'wpn') ? 'flex' : 'none';
+        document.getElementById('inv-section-box').style.display = (tab === 'box') ? 'flex' : 'none';
+    }
+
+    function renderInventory() {
+        const grid = document.getElementById('wpn-grid');
+        grid.innerHTML = '';
+
+        state.weapons.sort((a,b) => b.level - a.level);
+
+        state.weapons.forEach(w => {
+            const info = getWeaponInfo(w.level);
+            const isEq = (w.id === state.equippedId);
+
+            const item = document.createElement('div');
+            item.className = `item-slot ${isEq ? 'equipped' : ''}`;
+            item.onclick = () => {
+                state.equippedId = w.id;
+                renderHUD();
+                renderEnhancePage();
+                renderDungeons();
+                renderInventory();
+            };
+
+            item.innerHTML = `
+                ${isEq ? '<div class="eq-badge">장착</div>' : ''}
+                <div class="icon">${info.icon}</div>
+                <div class="lvl-tag">+${w.level}</div>
+            `;
+            grid.appendChild(item);
+        });
+
+        const boxList = document.getElementById('box-list');
+        boxList.innerHTML = '';
+
+        DUNGEON_TABLE.forEach(d => {
+            const cnt = state.boxes[d.zone] || 0;
+            const div = document.createElement('div');
+            div.className = 'list-card';
+            div.innerHTML = `
+                <div class="list-info">
+                    <div class="list-title">📦 ${d.zone}구역 강화 상자 (+${d.boxRange[0]}~+${d.boxRange[1]}강)</div>
+                    <div class="list-sub">보유 수량: ${cnt}개</div>
+                </div>
+                <button class="btn btn-gold" style="padding:6px 10px; font-size:12px;" onclick="openBox(${d.zone})">1개 개봉</button>
+            `;
+            boxList.appendChild(div);
+        });
+    }
+
+    function openBox(zoneId) {
+        if ((state.boxes[zoneId] || 0) <= 0) return alert("해당 상자가 없습니다!");
+        if (state.weapons.length >= 50) return alert("무기 인벤토리가 가득 찼습니다 (최대 50개).");
+
+        state.boxes[zoneId]--;
+        const d = DUNGEON_TABLE.find(x => x.zone === zoneId);
+
+        let minL = d.boxRange[0];
+        let maxL = d.boxRange[1];
+        let rolledLvl = Math.floor(Math.random() * (maxL - minL + 1)) + minL;
+        if (state.buffTime > 0 && Math.random() < 0.4) {
+            rolledLvl = Math.min(maxL, rolledLvl + 1);
+        }
+
+        const newWpn = createWeapon(rolledLvl);
+        const info = getWeaponInfo(newWpn.level);
+        log(`📦 ${zoneId}구역 상자 개봉 ➔ ${info.icon} [${info.name}] 획득!`, 'log-crit');
+
+        renderHUD();
+        renderInventory();
+    }
+
+    function openAllBoxes() {
+        let openedCount = 0;
+        DUNGEON_TABLE.forEach(d => {
+            while ((state.boxes[d.zone] || 0) > 0) {
+                if (state.weapons.length >= 50) break;
+                state.boxes[d.zone]--;
+
+                let minL = d.boxRange[0];
+                let maxL = d.boxRange[1];
+                let rolledLvl = Math.floor(Math.random() * (maxL - minL + 1)) + minL;
+                if (state.buffTime > 0 && Math.random() < 0.4) {
+                    rolledLvl = Math.min(maxL, rolledLvl + 1);
+                }
+                createWeapon(rolledLvl);
+                openedCount++;
+            }
+        });
+
+        if (openedCount > 0) {
+            log(`📦 상자 전체 일괄 개봉 완료! (${openedCount}개 개봉)`, 'log-crit');
+        } else {
+            alert("개봉할 상자가 없거나 인벤토리가 가득 찼습니다.");
+        }
+
+        renderHUD();
+        renderInventory();
+    }
+
+    function sellLowGradeWeapons() {
+        const toSell = state.weapons.filter(w => w.level <= 3 && w.id !== state.equippedId);
+        if (toSell.length === 0) return alert("판매할 저강화(+0~+3) 미장착 무기가 없습니다.");
+
+        const goldEarned = toSell.length * 3000;
+        state.gold += goldEarned;
+        state.weapons = state.weapons.filter(w => !toSell.includes(w));
+
+        log(`💰 저강화 무기 ${toSell.length}개 일괄 판매 (+${goldEarned.toLocaleString()} G)`, 'log-success');
+        renderHUD();
+        renderInventory();
+    }
+
+    /* 상점 로직 */
+    function buyItem(itemKey) {
+        if (itemKey === 'potion') {
+            if (state.gold < 100000) return alert("골드가 부족합니다.");
+            state.gold -= 100000;
+            state.potions++;
+            log("🛒 행운의 성수(포션) 구매 완료!", "log-success");
+        } else if (itemKey === 'scroll1') {
+            if (state.gold < 50000) return alert("골드가 부족합니다.");
+            state.gold -= 50000;
+            state.scrolls += 1;
+            log("🛒 파손 방지권 1장 구매 완료!", "log-success");
+        } else if (itemKey === 'scroll10') {
+            if (state.gold < 450000) return alert("골드가 부족합니다.");
+            state.gold -= 450000;
+            state.scrolls += 10;
+            log("🛒 파손 방지권 10장 패키지 구매 완료!", "log-success");
+        } else if (itemKey === 'wpn0') {
+            if (state.gold < 5000) return alert("골드가 부족합니다.");
+            if (state.weapons.length >= 50) return alert("인벤토리가 가득 찼습니다.");
+            state.gold -= 5000;
+            const w = createWeapon(0);
+            if (!state.equippedId) state.equippedId = w.id;
+            log("🛒 녹슨 훈련용 단검(+0) 구매 완료!", "log-success");
+        } else if (itemKey === 'wpn4') {
+            if (state.gold < 150000) return alert("골드가 부족합니다.");
+            if (state.weapons.length >= 50) return alert("인벤토리가 가득 찼습니다.");
+            state.gold -= 150000;
+            const w = createWeapon(4);
+            if (!state.equippedId) state.equippedId = w.id;
+            log("🛒 강철 기사 장검(+4) 구매 완료!", "log-success");
+        } else if (itemKey === 'random_box') {
+            if (state.gold < 500000) return alert("골드가 부족합니다.");
+            if (state.weapons.length >= 50) return alert("인벤토리가 가득 찼습니다.");
+            state.gold -= 500000;
+            const lvl = Math.floor(Math.random() * 9) + 1;
+            const w = createWeapon(lvl);
+            if (!state.equippedId) state.equippedId = w.id;
+            const info = getWeaponInfo(w.level);
+            log(`🛒 랜덤 무기 상자 ➔ ${info.icon} [${info.name}] 획득!`, "log-crit");
+        }
+
+        renderHUD();
+        renderEnhancePage();
+        renderInventory();
+    }
+
+    function exchangeFrag(type) {
+        if (type === 'scroll') {
+            if (state.fragments < 10) return alert("무기 파편이 부족합니다 (10개 필요).");
+            state.fragments -= 10;
+            state.scrolls += 1;
+            log("💎 무기 파편 10개 ➔ 파손 방지권 1장 교환 완료!", "log-success");
+        } else if (type === 'gold') {
+            if (state.fragments < 50) return alert("무기 파편이 부족합니다 (50개 필요).");
+            state.fragments -= 50;
+            state.gold += 500000;
+            log("💎 무기 파편 50개 ➔ 500,000 Gold 교환 완료!", "log-success");
+        }
+        renderHUD();
+        renderInventory();
+    }
+
+    /* 탭 전환 */
+    function switchPage(pageId) {
+        document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-page').forEach(page => page.classList.remove('active'));
+
+        event.currentTarget.classList.add('active');
+        document.getElementById(`page-${pageId}`).classList.add('active');
+
+        renderHUD();
+        renderEnhancePage();
+        renderDungeons();
+        renderInventory();
+    }
+
+    /* 게임 시작 */
+    initGame();
+</script>
+</body>
+</html>

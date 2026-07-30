@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>김재호 | Student Portfolio</title>
+    <!-- 폰트 적용 (Pretendard) -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        /* 기본 설정 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pretendard', sans-serif;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            color: #333;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+        }
+
+        /* 네비게이션 바 */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 10%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: 0.3s;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2c3e50;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #7f8c8d;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #2c3e50;
+        }
+
+        /* 메인 히어로 섹션 */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 0 10%;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            z-index: 1;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        .hero h1 span {
+            color: #a29bfe;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: #ecf0f1;
+            margin-bottom: 40px;
+            font-weight: 400;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 35px;
+            background: #ffffff;
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: 700;
+            border-radius: 30px;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            background: #a29bfe;
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        /* 공통 섹션 스타일 */
+        section {
+            padding: 100px 10%;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 60px;
+            font-size: 1.1rem;
+        }
+
+        /* 관심 분야 & 활동 (그리드 스타일) */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            transition: 0.3s;
+            border: 1px solid #f1f5f9;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border-bottom: 4px solid #3498db;
+        }
+
+        .card h3 {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .card .tag {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #e0f2fe;
+            color: #0284c7;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 20px;
+            margin-bottom: 15px;
+        }
+
+        .card p {
+            color: #64748b;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+        }
+
+        /* 프로젝트 버튼 전용 스타일 */
+        .project-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #2c3e50;
+            color: white;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border-radius: 20px;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+        
+        .project-btn:hover {
+            background: #3498db;
+            transform: translateY(-2px);
+        }
+
+        /* 푸터 */
+        footer {
+            background: #2c3e50;
+            color: #95a5a6;
+            text-align: center;
+            padding: 40px 10%;
+        }
+
+        /* 애니메이션 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .nav-links { display: none; }
+            section { padding: 60px 5%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 상단 네비게이션 -->
+    <header>
+        <a href="#" class="logo">STUDENT</a>
+        <ul class="nav-links">
+            <li><a href="#vision">Vision</a></li>
+            <li><a href="#activities">Activities</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </header>
+
+    <!-- 메인 비주얼 (Hero) -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>끊임없이 질문하고<br><span>성장하는 학생</span>입니다.</h1>
+            <p>온양고학교 다니는 중이며,<br>코딩과 게임을 하는 것에 관심이 많습니다.</p>
+            <a href="#vision" class="btn">나의 비전 보기</a>
+        </div>
+    </section>
+
+    <!-- 소개 및 비전 섹션 -->
+    <section id="vision">
+        <h2 class="section-title">My Vision</h2>
+        <p class="section-subtitle">제가 학업에 임하는 자세와 목표입니다.</p>
+        
+        <div style="max-width: 800px; margin: 0 auto; text-align: center; font-size: 1.2rem; color: #34495e;">
+            "배움에는 끝이 없고, 모든 경험은 성장의 밑거름이 된다고 믿습니다.<br>학교라는 울타리 안에서 전공 지식을 깊이 있게 탐구하는 동시에,<br>다양한 대외활동을 통해 세상을 넓게 보는 시야를 기르고 있습니다."
+        </div>
+    </section>
+
+    <!-- 전공 및 활동 (기업의 사업영역처럼 세련되게 표현) -->
+    <section id="activities" style="background-color: #ffffff;">
+        <h2 class="section-title">Academic & Activities</h2>
+        <p class="section-subtitle">저의 주요 관심 분야와 현재 진행 중인 활동들입니다.</p>
+        
+        <div class="grid-container">
+            <div class="card">
+                <span class="tag">Major Study</span>
+                <h3>전공 심화 학습</h3>
+                <p>데이터 분석과 프로그래밍 과목에 흥미를 느끼고 있으며, 특히 파이썬(Python)을 활용한 데이터 시각화 프로젝트를 우수한 성적으로 이수했습니다.</p>
+            </div>
+            <div class="card">
+                <span class="tag">Club Activity</span>
+                <h3>컴파일러 동아리 활동</h3>
+                <p>교내 코딩 동아리 '고딩을 열심히하는' 부원으로 활동하며, 선생님이 알려주는 가르침 통해 협업 능력을 기르고 있습니다.</p>
+            </div>
+            <!-- 수정한 개인 프로젝트 (게임 링크 포함) -->
+            <div class="card">
+                <span class="tag" style="background: #fce7f3; color: #be185d;">Web Game Project</span>
+                <h3>강화의 탑 (웹 게임 개발)</h3>
+                <p>HTML, CSS, JavaScript를 활용하여 직접 기획하고 개발한 무기 강화 시뮬레이션 웹 게임입니다. 확률 시스템, 인벤토리, 상점 기능 등을 구현했습니다.</p>
+                <!-- 게임 연결 버튼 (game.html 파일로 이동) -->
+                <a href="game.html" target="_blank" class="project-btn">🎮 게임 플레이 해보기</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 연락처 섹션 -->
+    <section id="contact">
+        <h2 class="section-title">Contact</h2>
+        <p class="section-subtitle">스터디 제안이나 네트워킹은 언제나 환영합니다!</p>
+        
+        <div style="text-align: center;">
+            <p style="font-size: 1.5rem; font-weight: 700; color: #2c3e50; margin-bottom: 10px;">2661zxzx@gmail.com</p>
+            <p style="color: #7f8c8d; margin-bottom: 20px;">GitHub: github.com/yourusername</p>
+        </div>
+    </section>
+
+    <!-- 푸터 -->
+    <footer>
+        <p>&copy; 2026 김재호. All Rights Reserved.</p>
+    </footer>
+
+</body>
+</html>
