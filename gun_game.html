@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>타입 앤 슈팅 디펜스 - 소환사의 협곡</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&display=swap');
+
+        :root {
+            --lol-bg: #010a13;
+            --lol-panel-bg: rgba(9, 20, 30, 0.9);
+            --lol-gold: #c8aa6e;
+            --lol-gold-light: #f0e6d2;
+            --lol-gold-dark: #785a28;
+            --lol-blue: #0ac8b9;
+            --lol-red: #e84057;
+            --lol-border: #c8aa6e;
+            --lol-card-bg: #09141e;
+        }
+
+        * { 
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--lol-bg);
+            color: var(--lol-gold-light);
+            font-family: 'Malgun Gothic', 'Pretendard', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            justify-content: center;
+            overflow: hidden;
+            background-image: radial-gradient(circle at center, #0a141e 0%, #010a13 100%);
+        }
+
+        h1 {
+            margin: 8px 0;
+            font-family: 'Cinzel', 'Malgun Gothic', serif;
+            font-size: 30px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: var(--lol-gold);
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(200, 170, 110, 0.5), 0 0 20px rgba(0,0,0,0.8);
+            border-bottom: 2px solid var(--lol-gold-dark);
+            padding-bottom: 6px;
+        }
+
+        /* 🔔 알림 바 */
+        #ui-notice {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(232, 64, 87, 0.95);
+            color: #fff;
+            padding: 10px 24px;
+            font-size: 15px;
+            font-weight: bold;
+            border: 2px solid var(--lol-gold);
+            border-radius: 4px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.8);
+            z-index: 1000;
+            display: none;
+            text-align: center;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 1020px;
+            margin-bottom: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            background: var(--lol-panel-bg);
+            padding: 10px 24px;
+            border: 2px solid var(--lol-gold-dark);
+            border-image: linear-gradient(to bottom, #c8aa6e, #785a28) 1;
+            box-shadow: 0 0 15px rgba(0,0,0,0.8), inset 0 0 10px rgba(200, 170, 110, 0.1);
+        }
+
+        .hud-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--lol-gold-light);
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            position: relative;
+        }
+
+        .gun-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 200px;
+            z-index: 101;
+        }
+
+        .gun-card {
+            background: var(--lol-card-bg);
+            padding: 10px 12px;
+            border: 2px solid var(--lol-gold-dark);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .gun-card.ready {
+            border-color: var(--lol-gold);
+            box-shadow: 0 0 10px rgba(200, 170, 110, 0.3);
+        }
+
+        .gun-card.cooldown {
+            opacity: 0.6;
+            border-color: var(--lol-red);
+        }
+
+        .gun-card.locked {
+            opacity: 0.9;
+            border-color: #5b5a56;
+            background: #050c12;
+        }
+
+        .gun-name {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--lol-gold);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .gun-stats {
+            font-size: 12px;
+            color: #a09b8c;
+            margin-top: 4px;
+        }
+
+        .cd-badge {
+            margin-top: 6px;
+            padding: 3px 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            border: 1px solid var(--lol-gold-dark);
+        }
+
+        .ready-bg { background: rgba(10, 200, 185, 0.2); color: var(--lol-blue); border-color: var(--lol-blue); }
+        .cd-bg { background: rgba(232, 64, 87, 0.2); color: var(--lol-red); border-color: var(--lol-red); }
+
+        .unlock-btn {
+            margin-top: 6px;
+            padding: 6px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            background: linear-gradient(to bottom, #c8aa6e, #785a28);
+            color: #010a13;
+            border: 1px solid var(--lol-gold);
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .unlock-btn:hover {
+            background: #f0e6d2;
+            box-shadow: 0 0 10px rgba(200, 170, 110, 0.6);
+        }
+
+        #game-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #050c12;
+            border: 3px solid var(--lol-gold-dark);
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.9);
+        }
+
+        #game-input {
+            width: 100%;
+            height: 48px;
+            background: rgba(1, 10, 19, 0.95);
+            color: #f0e6d2;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            border: 2px solid var(--lol-gold-dark);
+            margin-top: 10px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            outline: none;
+            transition: all 0.2s ease;
+            font-family: 'Malgun Gothic', sans-serif;
+        }
+
+        #game-input:focus {
+            border-color: var(--lol-gold);
+            box-shadow: 0 0 15px rgba(200, 170, 110, 0.4), inset 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        #game-input::placeholder { color: #5b5a56; font-size: 15px; }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(1, 10, 19, 0.94);
+            backdrop-filter: blur(6px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            border: 3px solid var(--lol-gold);
+        }
+
+        .modal-title {
+            font-family: 'Cinzel', 'Malgun Gothic', serif;
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--lol-gold);
+            margin-bottom: 20px;
+            text-shadow: 0 0 12px rgba(200, 170, 110, 0.6);
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .perk-container {
+            display: flex;
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .perk-card {
+            background: #09141e;
+            border: 2px solid var(--lol-gold-dark);
+            width: 220px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .perk-card:hover {
+            transform: translateY(-6px);
+            background: #112233;
+        }
+
+        .perk-rank-badge {
+            font-size: 11px;
+            font-weight: 900;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .perk-icon { font-size: 40px; margin-bottom: 8px; }
+        .perk-name { font-size: 16px; font-weight: bold; color: var(--lol-gold-light); margin-bottom: 8px; }
+        .perk-desc { font-size: 12px; color: #a09b8c; line-height: 1.4; }
+
+        button {
+            padding: 14px 38px;
+            font-size: 18px;
+            font-weight: bold;
+            font-family: 'Cinzel', 'Malgun Gothic', serif;
+            background: linear-gradient(to bottom, #1e2328, #111823);
+            color: var(--lol-gold);
+            border: 2px solid var(--lol-gold);
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: linear-gradient(to bottom, #2b3138, #1e2530);
+            color: var(--lol-gold-light);
+            box-shadow: 0 0 15px rgba(200, 170, 110, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 🔔 상단 알림 바 -->
+    <div id="ui-notice"></div>
+
+    <h1>⚔️ TYPE & SHOOT: SUMMONER'S RIFT</h1>
+    
+    <div class="hud">
+        <div class="hud-item">🌊 WAVE: <span id="waveDisplay" style="color:var(--lol-gold);">1</span></div>
+        <div class="hud-item">🪙 GOLD: <span id="goldDisplay" style="color:#f1c40f;">0</span> G</div>
+        <div class="hud-item">❤️ HP: <span id="livesDisplay" style="color:var(--lol-red);">5</span></div>
+        <div class="hud-item">🛡️ SHIELD: <span id="shieldDisplay" style="color:var(--lol-blue);">0</span></div>
+    </div>
+
+    <div class="main-layout">
+        <div class="gun-list" id="gunListContainer"></div>
+
+        <div id="game-container">
+            <canvas id="gameCanvas" width="800" height="500"></canvas>
+            <input type="text" id="game-input" placeholder="총 이름을 직접 타이핑하고 Enter를 누르세요!" autocomplete="off">
+            
+            <!-- 🚀 게임 시작 화면 -->
+            <div id="start-screen" class="modal-overlay" style="display: flex;">
+                <div class="modal-title">⚔️ 타입 앤 슈팅 디펜스</div>
+                <p style="font-size: 15px; color: #a09b8c; text-align: center; max-width: 440px; line-height: 1.6; margin-bottom: 10px;">
+                    타자로 무기를 발사하여 몰려오는 몬스터를 격퇴하세요!<br>
+                    몬스터를 잡고 모은 Gold로 왼쪽 메뉴에서 언제든 새로운 무기를 해금할 수 있습니다.
+                </p>
+                <button onclick="startGame()">GAME START</button>
+            </div>
+
+            <!-- ⚡ 버프 선택 및 무기 해금 화면 -->
+            <div id="perk-modal" class="modal-overlay">
+                <div class="modal-title">⚡ VICTORY! 마법공학 능력 선택</div>
+                <p style="color: #0ac8b9; font-size: 14px; margin-top: -10px; margin-bottom: 15px;">
+                    💡 원하는 능력을 클릭하여 장착하세요!
+                </p>
+                <div class="perk-container" id="perk-cards-container"></div>
+            </div>
+
+            <!-- ☠️ 게임 오버 화면 -->
+            <div id="game-over" class="modal-overlay">
+                <h2 style="font-size:38px; color:var(--lol-red); margin-bottom:10px; font-family:'Cinzel';">DEFEAT</h2>
+                <p style="font-size:18px; margin:5px 0;">최종 도달 웨이브: <span id="final-wave" style="color:var(--lol-gold);">1</span></p>
+                <p style="font-size:18px; margin:5px 0;">최종 획득 골드: <span id="final-score" style="color:#f1c40f;">0</span> G</p>
+                <button onclick="resetGame()">다시 도전하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameInput = document.getElementById('game-input');
+        const goldDisplay = document.getElementById('goldDisplay');
+        const livesDisplay = document.getElementById('livesDisplay');
+        const shieldDisplay = document.getElementById('shieldDisplay');
+        const waveDisplay = document.getElementById('waveDisplay');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over');
+        const perkModal = document.getElementById('perk-modal');
+        const perkCardsContainer = document.getElementById('perk-cards-container');
+        const finalScore = document.getElementById('final-score');
+        const finalWave = document.getElementById('final-wave');
+        const gunListContainer = document.getElementById('gunListContainer');
+        const uiNotice = document.getElementById('ui-notice');
+
+        let noticeTimer = null;
+        function showNotice(msg, bg = 'rgba(232, 64, 87, 0.95)') {
+            uiNotice.innerText = msg;
+            uiNotice.style.background = bg;
+            uiNotice.style.display = 'block';
+            if (noticeTimer) clearTimeout(noticeTimer);
+            noticeTimer = setTimeout(() => {
+                uiNotice.style.display = 'none';
+            }, 2500);
+        }
+
+        // 🚫 보안 설정 (복사 붙여넣기 및 우클릭 차단)
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+        document.addEventListener('copy', (e) => e.preventDefault());
+        document.addEventListener('cut', (e) => e.preventDefault());
+
+        gameInput.addEventListener('paste', (e) => {
+            e.preventDefault();
+            showNotice('⚠️ 붙여넣기는 금지되어 있습니다! 직접 타이핑하세요.');
+        });
+
+        // 🎯 무기 데이터
+        const arsenal = {
+            '권총':   { dmg: 5,  speed: 13, color: '#f1c40f', radius: 4, type: 'single', count: 1,  delay: 0,  cd: 350,  lastFired: 0, unlocked: true,  cost: 0 },
+            '돌격소총': { dmg: 1,  speed: 14, color: '#e67e22', radius: 5, type: 'single', count: 8,  delay: 80, cd: 8000, lastFired: 0, unlocked: false, cost: 120 },
+            '기관단총': { dmg: 1,  speed: 16, color: '#3498db', radius: 4, type: 'single', count: 10, delay: 60, cd: 7000, lastFired: 0, unlocked: false, cost: 150 },
+            '산탄총':  { dmg: 1,  speed: 10, color: '#e74c3c', radius: 5, type: 'spread', count: 1,  delay: 0,  cd: 1600, lastFired: 0, unlocked: false, cost: 200 },
+            '저격소총': { dmg: 25, speed: 28, color: '#a855f7', radius: 8, type: 'single', count: 1,  delay: 0,  cd: 1800, lastFired: 0, unlocked: false, cost: 350 }
+        };
+
+        // 🌟 등급 데이터
+        const RANKS = {
+            COMMON:    { name: '일반', color: '#a0a0a0', bg: 'rgba(160, 160, 160, 0.15)', border: '#808080' },
+            RARE:      { name: '희귀', color: '#3498db', bg: 'rgba(52, 152, 219, 0.15)', border: '#3498db' },
+            EPIC:      { name: '서사', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)', border: '#a855f7' },
+            LEGENDARY: { name: '전설', color: '#f1c40f', bg: 'rgba(241, 196, 15, 0.25)', border: '#f1c40f' }
+        };
+
+        // ⚡ 능력 목록
+        const ALL_PERKS = [
+            { id: 'power_up', rank: RANKS.COMMON, name: '과부하 탄환', icon: '🔥', desc: '모든 무기의 기본 데미지가 +1 증가합니다.' },
+            { id: 'bounty_hunter', rank: RANKS.COMMON, name: '현상금 사냥꾼', icon: '💰', desc: '적 처치 시 획득하는 골드가 +50% 증가합니다.' },
+            { id: 'shield', rank: RANKS.COMMON, name: '에너지 쉴드', icon: '🛡️', desc: '보호막을 1 획득합니다. (적이 도달 시 체력 대신 차감)' },
+            { id: 'magnet', rank: RANKS.COMMON, name: '골드 자석', icon: '🧲', desc: '적 처치 시 25% 확률로 보너스 골드 20G를 추가 획득합니다.' },
+
+            { id: 'frost_shot', rank: RANKS.RARE, name: '빙결 탄환', icon: '❄️', desc: '총알에 맞은 적의 이동 속도가 지속적으로 40% 감소합니다.' },
+            { id: 'critical', rank: RANKS.RARE, name: '치명타 타격', icon: '🎯', desc: '25% 확률로 2.5배의 치명타 대미지를 입깁니다.' },
+            { id: 'vampire', rank: RANKS.RARE, name: '생명 흡수', icon: '🩸', desc: '적을 8마리 처치할 때마다 체력을 회복합니다.' },
+            { id: 'thorns', rank: RANKS.RARE, name: '가시 갑옷', icon: '🦔', desc: '적이 기지에 도달할 때 해당 적과 주변 적에게 반사 피해(5)를 입깁니다.' },
+            { id: 'giant_slayer', rank: RANKS.RARE, name: '거인 학살자', icon: '🗡️', desc: '최대 체력이 3 이상인 대형 적에게 50% 추가 피해를 입깁니다.' },
+            { id: 'double_shot', rank: RANKS.RARE, name: '쌍둥이 탄환', icon: '👯', desc: '무기 발사 시 25% 확률로 탄환이 1발 더 발사됩니다.' },
+
+            { id: 'overclock', rank: RANKS.EPIC, name: '오버클럭', icon: '⚙️', desc: '모든 무기의 재사용 대기시간이 20% 감소합니다.' },
+            { id: 'chain_lightning', rank: RANKS.EPIC, name: '연쇄 전격', icon: '⚡', desc: '적 처치 시 근처 적 2명에게 전기 체인이 발생하여 피해를 줍니다.' },
+            { id: 'corpse_explode', rank: RANKS.EPIC, name: '시체 폭발', icon: '💥', desc: '적 처치 시 폭발이 일어나 주위 적에게 폭발 피해를 줍니다.' },
+            { id: 'poison_cloud', rank: RANKS.EPIC, name: '맹독 구름', icon: '☠️', desc: '적 처치 위치에 3초간 지속 피해를 주는 독구름을 생성합니다.' },
+            { id: 'executioner', rank: RANKS.EPIC, name: '처형자', icon: '🪓', desc: '체력이 30% 이하인 적에게 2배의 단죄 피해를 입깁니다.' },
+            { id: 'overheal', rank: RANKS.EPIC, name: '과충전 쉴드', icon: '🔋', desc: '체력이 가득 찼을 때 회복 시 보호막(+1)으로 즉시 전환됩니다.' },
+
+            { id: 'meteor', rank: RANKS.LEGENDARY, name: '유성 낙하', icon: '☄️', desc: '4초마다 하늘에서 유성이 떨어져 강력한 범위 피해를 줍니다.' },
+            { id: 'time_stop', rank: RANKS.LEGENDARY, name: '시간 왜곡', icon: '⏳', desc: '10초마다 2초 동안 모든 적의 시간을 일시 정지시킵니다.' },
+            { id: 'laser_beam', rank: RANKS.LEGENDARY, name: '궤도 레이저', icon: '🛰️', desc: '웨이브 시작 시 중앙 레인 전체에 강렬한 레이저를 발사합니다.' },
+            { id: 'thor_hammer', rank: RANKS.LEGENDARY, name: '천둥의 망치', icon: '🔨', desc: '5초마다 충격파가 터져 범위 안의 적들을 1.5초간 기절시킵니다.' }
+        ];
+
+        let activePerks = {
+            chain_lightning: 0, corpse_explode: 0, vampire: 0, frost_shot: 0,
+            critical: 0, poison_cloud: 0, shield: 0, overclock: 0, meteor: 0, power_up: 0,
+            bounty_hunter: 0, giant_slayer: 0, double_shot: 0, executioner: 0, time_stop: 0,
+            laser_beam: 0, thor_hammer: 0, thorns: 0, magnet: 0, overheal: 0
+        };
+
+        const mobEmojis = ['👾', '🧟', '👽', '👻', '🦇', '👹'];
+        let mobs = [], bullets = [], particles = [], floatingTexts = [], poisonClouds = [], meteors = [];
+        let gold = 0, lives = 5, shields = 0, gameActive = false, frameCount = 0, killCountForVamp = 0;
+        let wave = 1, mobsToSpawn = 5, mobsSpawned = 0, spawnInterval = 120, waveState = 'INIT';
+        let screenShake = 0, laserEffectTimer = 0;
+        const turret = { x: 400, y: 460 };
+        const lane = { xMin: 290, xMax: 510, width: 220 };
+
+        function addShake(amount) { screenShake = Math.max(screenShake, amount); }
+
+        function createParticles(x, y, color, count = 8, speed = 3) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const spd = Math.random() * speed + 1;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * spd,
+                    vy: Math.sin(angle) * spd,
+                    radius: Math.random() * 3 + 2,
+                    color, life: 25, maxLife: 25
+                });
+            }
+        }
+
+        function addFloatingText(text, x, y, color = '#f0e6d2', size = 18) {
+            floatingTexts.push({ text, x, y, color, size, life: 35, maxLife: 35 });
+        }
+
+        class Mob {
+            constructor(waveNum) {
+                this.emoji = mobEmojis[Math.floor(Math.random() * mobEmojis.length)];
+                this.x = lane.xMin + 20 + Math.random() * (lane.width - 40);
+                this.y = -30;
+                this.baseSpeed = 0.3 + (waveNum * 0.03) + Math.random() * 0.15;
+                this.speed = this.baseSpeed;
+                this.maxHp = 1 + Math.floor((waveNum - 1) / 2);
+                this.hp = this.maxHp;
+                this.radius = 20;
+                this.isFrozen = false;
+                this.stunTimer = 0;
+            }
+            update() {
+                let isTimeStopped = activePerks.time_stop > 0 && (frameCount % 600 < 120);
+                if (this.stunTimer > 0) this.stunTimer--;
+
+                if (!isTimeStopped && this.stunTimer <= 0) {
+                    this.y += this.speed;
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.font = '30px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.emoji, this.x, this.y);
+
+                if (this.isFrozen) {
+                    ctx.fillStyle = 'rgba(10, 200, 185, 0.4)';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius + 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                if (this.stunTimer > 0) {
+                    ctx.fillStyle = '#f1c40f';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.fillText('💫', this.x, this.y - 32);
+                }
+
+                if (this.hp < this.maxHp) {
+                    ctx.fillStyle = 'rgba(232, 64, 87, 0.8)';
+                    ctx.fillRect(this.x - 16, this.y - 26, 32, 5);
+                    ctx.fillStyle = '#0ac8b9';
+                    ctx.fillRect(this.x - 16, this.y - 26, 32 * (this.hp / this.maxHp), 5);
+                }
+                ctx.restore();
+            }
+        }
+
+        class Bullet {
+            constructor(x, y, target, stats, offsetAngle = 0) {
+                this.x = x; this.y = y;
+                this.dmg = stats.dmg + activePerks.power_up;
+                this.color = stats.color;
+                this.radius = stats.radius;
+                
+                const dx = target.x - x;
+                const dy = target.y - y;
+                let angle = Math.atan2(dy, dx) + offsetAngle;
+                
+                this.vx = Math.cos(angle) * stats.speed;
+                this.vy = Math.sin(angle) * stats.speed;
+            }
+            update() { this.x += this.vx; this.y += this.vy; }
+            draw() {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function getTargetMob() {
+            if (mobs.length === 0) return null;
+            return mobs.reduce((lowest, current) => (current.y > lowest.y) ? current : lowest);
+        }
+
+        // 🛠️ DOM을 파괴하지 않는 무기 목록 UI 초기화 및 업데이트 함수
+        function initGunListUI() {
+            let html = '';
+            for (const [name, stats] of Object.entries(arsenal)) {
+                html += `
+                    <div class="gun-card" id="card-${name}">
+                        <div class="gun-name"><span id="name-${name}">${name}</span></div>
+                        <div class="gun-stats" id="stats-${name}"></div>
+                        <div class="cd-badge" id="cd-${name}"></div>
+                        <button class="unlock-btn" id="btn-${name}" onclick="unlockGun('${name}')"></button>
+                    </div>
+                `;
+            }
+            gunListContainer.innerHTML = html;
+        }
+
+        function updateGunListUI() {
+            const now = Date.now();
+            const cdModifier = activePerks.overclock > 0 ? (1 - activePerks.overclock * 0.2) : 1;
+
+            for (const [name, stats] of Object.entries(arsenal)) {
+                const cardEl = document.getElementById(`card-${name}`);
+                const nameEl = document.getElementById(`name-${name}`);
+                const statsEl = document.getElementById(`stats-${name}`);
+                const cdEl = document.getElementById(`cd-${name}`);
+                const btnEl = document.getElementById(`btn-${name}`);
+
+                if (!cardEl) continue;
+
+                if (!stats.unlocked) {
+                    cardEl.className = 'gun-card locked';
+                    nameEl.innerText = `🔒 ${name}`;
+                    statsEl.innerText = `해금 가격: ${stats.cost} G`;
+                    cdEl.style.display = 'none';
+                    btnEl.style.display = 'block';
+                    btnEl.innerText = `🔓 ${stats.cost}G 해금`;
+                } else {
+                    cardEl.className = 'gun-card';
+                    nameEl.innerText = name;
+                    let shotText = stats.count > 1 ? `${stats.count}연사` : '1발';
+                    statsEl.innerText = `피해량: ${stats.dmg + activePerks.power_up} | ${shotText}`;
+                    btnEl.style.display = 'none';
+                    cdEl.style.display = 'block';
+
+                    const finalCd = stats.cd * cdModifier;
+                    const elapsed = now - stats.lastFired;
+                    const remaining = Math.max(0, (finalCd - elapsed) / 1000);
+                    const isReady = remaining === 0;
+
+                    if (isReady) {
+                        cardEl.classList.add('ready');
+                        cardEl.classList.remove('cooldown');
+                        cdEl.className = 'cd-badge ready-bg';
+                        cdEl.innerText = '⚡ READY';
+                    } else {
+                        cardEl.classList.add('cooldown');
+                        cardEl.classList.remove('ready');
+                        cdEl.className = 'cd-badge cd-bg';
+                        cdEl.innerText = `⏳ ${remaining.toFixed(1)}s`;
+                    }
+                }
+            }
+        }
+
+        // 🔓 완전히 해결된 무기 해금 함수 (언제든 골드만 있으면 클릭 가능)
+        function unlockGun(gunName) {
+            const stats = arsenal[gunName];
+            if (!stats || stats.unlocked) return;
+
+            if (gold >= stats.cost) {
+                gold -= stats.cost;
+                stats.unlocked = true;
+                goldDisplay.innerText = gold;
+                showNotice(`🎉 [${gunName}] 해금 완료! 이제 타자로 발사할 수 있습니다.`, 'rgba(10, 200, 185, 0.95)');
+                addShake(4);
+                updateGunListUI();
+            } else {
+                showNotice(`⚠️ 골드가 부족합니다! (필요: ${stats.cost}G / 보유: ${gold}G)`);
+            }
+
+            if (gameActive && waveState !== 'PERK_SELECT') {
+                gameInput.focus();
+            }
+        }
+
+        function fireGun(gunName) {
+            const stats = arsenal[gunName];
+            if (!stats) return;
+
+            if (!stats.unlocked) {
+                showNotice(`⚠️ [${gunName}] 은(는) 잠겨있습니다. 왼쪽 메뉴에서 먼저 해금하세요!`);
+                return;
+            }
+
+            const now = Date.now();
+            const cdModifier = activePerks.overclock > 0 ? (1 - activePerks.overclock * 0.2) : 1;
+            const finalCd = stats.cd * cdModifier;
+            const elapsed = now - stats.lastFired;
+
+            if (elapsed < finalCd) {
+                const remainSec = ((finalCd - elapsed) / 1000).toFixed(1);
+                showNotice(`⚠️ [${gunName}] 재사용 대기중! (${remainSec}초)`);
+                return;
+            }
+
+            stats.lastFired = now;
+
+            let totalShots = stats.count;
+            if (activePerks.double_shot > 0 && Math.random() < 0.25) {
+                totalShots += 1;
+                addFloatingText('👯 보너스 탄환!', turret.x, turret.y - 30, '#0ac8b9', 16);
+            }
+
+            for (let i = 0; i < totalShots; i++) {
+                setTimeout(() => {
+                    if (!gameActive) return;
+                    const target = getTargetMob();
+                    if (!target) return;
+
+                    if (stats.type === 'single') {
+                        bullets.push(new Bullet(turret.x, turret.y, target, stats));
+                    } else if (stats.type === 'spread') {
+                        bullets.push(new Bullet(turret.x, turret.y, target, stats, -0.18));
+                        bullets.push(new Bullet(turret.x, turret.y, target, stats, 0));
+                        bullets.push(new Bullet(turret.x, turret.y, target, stats, 0.18));
+                    }
+                    addShake(1.5);
+                }, i * stats.delay);
+            }
+        }
+
+        function triggerKillPerks(deadMob) {
+            let baseGold = 10 + wave * 2;
+            if (activePerks.bounty_hunter > 0) baseGold = Math.round(baseGold * 1.5);
+            
+            if (activePerks.magnet > 0 && Math.random() < 0.25) {
+                baseGold += 20;
+                addFloatingText('🧲 +20G 자석!', deadMob.x, deadMob.y - 25, '#f1c40f', 16);
+            }
+
+            gold += baseGold;
+            goldDisplay.innerText = gold;
+            addFloatingText(`+${baseGold}G`, deadMob.x, deadMob.y - 10, '#f1c40f', 16);
+
+            if (activePerks.vampire > 0) {
+                killCountForVamp++;
+                if (killCountForVamp >= 8) {
+                    killCountForVamp = 0;
+                    if (lives < 5 || activePerks.overheal === 0) {
+                        lives = Math.min(5, lives + 1);
+                        livesDisplay.innerText = lives;
+                        addFloatingText('❤️ 체력 회복!', deadMob.x, deadMob.y - 20, '#e84057', 20);
+                    } else {
+                        shields++;
+                        shieldDisplay.innerText = shields;
+                        addFloatingText('🔋 과충전 쉴드!', deadMob.x, deadMob.y - 20, '#0ac8b9', 20);
+                    }
+                }
+            }
+
+            if (activePerks.corpse_explode > 0) {
+                createParticles(deadMob.x, deadMob.y, '#c8aa6e', 20, 6);
+                addShake(6);
+                addFloatingText('💥 폭발!', deadMob.x, deadMob.y, '#c8aa6e', 22);
+                mobs.forEach(m => {
+                    if (Math.hypot(m.x - deadMob.x, m.y - deadMob.y) < 100) {
+                        m.hp -= 3;
+                        addFloatingText('-3', m.x, m.y - 15, '#e84057', 16);
+                    }
+                });
+            }
+
+            if (activePerks.chain_lightning > 0) {
+                let targets = mobs.filter(m => m !== deadMob).slice(0, 2);
+                targets.forEach(t => {
+                    t.hp -= 2;
+                    ctx.save();
+                    ctx.strokeStyle = '#0ac8b9';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(deadMob.x, deadMob.y);
+                    ctx.lineTo(t.x, t.y);
+                    ctx.stroke();
+                    ctx.restore();
+                    createParticles(t.x, t.y, '#0ac8b9', 8, 4);
+                    addFloatingText('⚡ 2', t.x, t.y - 10, '#0ac8b9', 16);
+                });
+            }
+
+            if (activePerks.poison_cloud > 0) {
+                poisonClouds.push({ x: deadMob.x, y: deadMob.y, radius: 45, duration: 180 });
+            }
+        }
+
+        function openPerkSelection() {
+            waveState = 'PERK_SELECT';
+            let shuffled = [...ALL_PERKS].sort(() => 0.5 - Math.random()).slice(0, 3);
+            perkCardsContainer.innerHTML = '';
+
+            shuffled.forEach(perk => {
+                const card = document.createElement('div');
+                card.className = 'perk-card';
+                card.style.borderColor = perk.rank.border;
+                card.style.background = perk.rank.bg;
+                if (perk.rank === RANKS.LEGENDARY) {
+                    card.style.boxShadow = '0 0 15px rgba(241, 196, 15, 0.4)';
+                }
+
+                card.innerHTML = `
+                    <div class="perk-rank-badge" style="background:${perk.rank.border}; color:${perk.rank === RANKS.LEGENDARY ? '#000' : '#fff'};">
+                        ${perk.rank.name}
+                    </div>
+                    <div class="perk-icon">${perk.icon}</div>
+                    <div class="perk-name" style="color:${perk.rank.color};">${perk.name}</div>
+                    <div class="perk-desc">${perk.desc}</div>
+                `;
+                card.onclick = () => selectPerk(perk.id);
+                perkCardsContainer.appendChild(card);
+            });
+
+            perkModal.style.display = 'flex';
+            updateGunListUI();
+        }
+
+        function selectPerk(perkId) {
+            activePerks[perkId]++;
+            if (perkId === 'shield') {
+                shields++;
+                shieldDisplay.innerText = shields;
+            }
+            perkModal.style.display = 'none';
+            wave++;
+            mobsToSpawn = 5 + wave * 2;
+            mobsSpawned = 0;
+            waveDisplay.innerText = wave;
+            waveState = 'PLAYING';
+
+            if (activePerks.laser_beam > 0) {
+                laserEffectTimer = 30;
+                addShake(12);
+                mobs.forEach(m => m.hp -= 8);
+            }
+
+            gameInput.focus();
+            updateGunListUI();
+        }
+
+        gameInput.addEventListener('keydown', (e) => {
+            if (!gameActive || waveState === 'PERK_SELECT') return;
+            if (e.isComposing) return;
+
+            if (e.key === 'Enter') {
+                const inputWord = gameInput.value.trim();
+                fireGun(inputWord);
+                gameInput.value = '';
+            }
+        });
+
+        window.addEventListener('click', (e) => {
+            if (gameActive && waveState !== 'PERK_SELECT' && !e.target.closest('.gun-list')) {
+                gameInput.focus();
+            }
+        });
+
+        function updateGame() {
+            if (!gameActive) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            if (screenShake > 0) {
+                const rx = (Math.random() - 0.5) * screenShake;
+                const ry = (Math.random() - 0.5) * screenShake;
+                ctx.translate(rx, ry);
+                screenShake *= 0.85;
+                if (screenShake < 0.2) screenShake = 0;
+            }
+
+            // 레인 배경
+            ctx.fillStyle = '#0a1622';
+            ctx.fillRect(lane.xMin, 0, lane.width, canvas.height);
+
+            ctx.strokeStyle = '#785a28';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(lane.xMin, 0); ctx.lineTo(lane.xMin, canvas.height);
+            ctx.moveTo(lane.xMax, 0); ctx.lineTo(lane.xMax, canvas.height);
+            ctx.stroke();
+
+            if (laserEffectTimer > 0) {
+                ctx.fillStyle = 'rgba(10, 200, 185, 0.6)';
+                ctx.fillRect(lane.xMin, 0, lane.width, canvas.height);
+                laserEffectTimer--;
+            }
+
+            if (activePerks.thor_hammer > 0 && frameCount % 300 === 0 && mobs.length > 0) {
+                addShake(8);
+                addFloatingText('🔨 천둥의 충격파!', canvas.width / 2, 200, '#f1c40f', 24);
+                mobs.forEach(m => {
+                    m.stunTimer = 90;
+                    m.hp -= 2;
+                });
+            }
+
+            // 포탑
+            ctx.font = '40px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('🛡️', turret.x, turret.y + 15);
+
+            // 무기 UI 쿨다운 업데이트
+            updateGunListUI();
+
+            if (activePerks.meteor > 0 && frameCount % 240 === 0 && mobs.length > 0) {
+                const target = mobs[Math.floor(Math.random() * mobs.length)];
+                meteors.push({ x: target.x, y: -50, targetX: target.x, targetY: target.y, speed: 8 });
+            }
+
+            for (let i = meteors.length - 1; i >= 0; i--) {
+                let m = meteors[i];
+                m.y += m.speed;
+                ctx.fillStyle = '#e84057';
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (m.y >= m.targetY) {
+                    addShake(10);
+                    createParticles(m.targetX, m.targetY, '#c8aa6e', 25, 7);
+                    addFloatingText('☄️ 메테오!', m.targetX, m.targetY, '#e84057', 22);
+                    mobs.forEach(mob => {
+                        if (Math.hypot(mob.x - m.targetX, mob.y - m.targetY) < 110) {
+                            mob.hp -= 6;
+                        }
+                    });
+                    meteors.splice(i, 1);
+                }
+            }
+
+            for (let i = poisonClouds.length - 1; i >= 0; i--) {
+                let p = poisonClouds[i];
+                ctx.fillStyle = 'rgba(10, 200, 185, 0.2)';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (frameCount % 30 === 0) {
+                    mobs.forEach(m => {
+                        if (Math.hypot(m.x - p.x, m.y - p.y) < p.radius) {
+                            m.hp -= 1;
+                            addFloatingText('☠️ 1', m.x, m.y - 10, '#0ac8b9', 14);
+                        }
+                    });
+                }
+                p.duration--;
+                if (p.duration <= 0) poisonClouds.splice(i, 1);
+            }
+
+            // 웨이브 처리
+            if (waveState === 'PLAYING') {
+                if (mobsSpawned < mobsToSpawn) {
+                    if (frameCount % spawnInterval === 0) {
+                        mobs.push(new Mob(wave));
+                        mobsSpawned++;
+                    }
+                } else if (mobs.length === 0) {
+                    openPerkSelection();
+                }
+            }
+
+            // 탄환 처리
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.update();
+                b.draw();
+
+                if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+                    bullets.splice(i, 1);
+                    continue;
+                }
+
+                for (let j = mobs.length - 1; j >= 0; j--) {
+                    let m = mobs[j];
+                    if (Math.hypot(b.x - m.x, b.y - m.y) < b.radius + m.radius) {
+                        let finalDmg = b.dmg;
+
+                        if (activePerks.giant_slayer > 0 && m.maxHp >= 3) {
+                            finalDmg = Math.round(finalDmg * 1.5);
+                        }
+
+                        if (activePerks.executioner > 0 && (m.hp / m.maxHp) <= 0.3) {
+                            finalDmg = finalDmg * 2;
+                        }
+
+                        if (activePerks.critical > 0 && Math.random() < 0.25) {
+                            finalDmg = Math.round(finalDmg * 2.5);
+                            addFloatingText(`🎯 ${finalDmg}`, m.x, m.y - 20, '#e84057', 22);
+                            addShake(4);
+                        } else {
+                            addFloatingText(`${finalDmg}`, m.x, m.y - 15, '#c8aa6e', 16);
+                        }
+
+                        if (activePerks.frost_shot > 0 && !m.isFrozen) {
+                            m.isFrozen = true;
+                            m.speed = m.baseSpeed * 0.6;
+                        }
+
+                        m.hp -= finalDmg;
+                        createParticles(b.x, b.y, b.color, 6, 3);
+                        bullets.splice(i, 1);
+
+                        if (m.hp <= 0) {
+                            triggerKillPerks(m);
+                            mobs.splice(j, 1);
+                            addShake(2);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // 몹 및 기지 충돌 처리
+            for (let i = mobs.length - 1; i >= 0; i--) {
+                let m = mobs[i];
+                m.update();
+                m.draw();
+
+                if (m.y > canvas.height - 35) {
+                    mobs.splice(i, 1);
+
+                    if (activePerks.thorns > 0) {
+                        addFloatingText('🦔 가시 반사!', turret.x, turret.y - 60, '#c8aa6e', 20);
+                        mobs.forEach(otherMob => {
+                            if (otherMob.y > canvas.height - 150) otherMob.hp -= 5;
+                        });
+                    }
+
+                    if (shields > 0) {
+                        shields--;
+                        shieldDisplay.innerText = shields;
+                        addFloatingText('🛡️ 방어막 차단!', turret.x, turret.y - 40, '#0ac8b9', 22);
+                        addShake(6);
+                    } else {
+                        lives--;
+                        livesDisplay.innerText = lives;
+                        addShake(12);
+
+                        if (lives <= 0) {
+                            gameActive = false;
+                            finalScore.innerText = gold;
+                            finalWave.innerText = wave;
+                            gameOverScreen.style.display = 'flex';
+                        }
+                    }
+                }
+            }
+
+            // 파티클
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.life--;
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            // 텍스트
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                let ft = floatingTexts[i];
+                ft.y -= 0.8; ft.life--;
+                ctx.fillStyle = ft.color;
+                ctx.font = `bold ${ft.size}px Malgun Gothic`;
+                ctx.textAlign = 'center';
+                ctx.globalAlpha = ft.life / ft.maxLife;
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.globalAlpha = 1.0;
+                if (ft.life <= 0) floatingTexts.splice(i, 1);
+            }
+
+            ctx.restore();
+
+            frameCount++;
+            requestAnimationFrame(updateGame);
+        }
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            resetGame();
+        }
+
+        function resetGame() {
+            mobs = []; bullets = []; particles = []; floatingTexts = []; poisonClouds = []; meteors = [];
+            gold = 0; lives = 5; shields = 0; wave = 1; mobsToSpawn = 5; mobsSpawned = 0; killCountForVamp = 0;
+            waveState = 'PLAYING';
+            
+            for (let key in activePerks) activePerks[key] = 0;
+            for (const key in arsenal) {
+                arsenal[key].lastFired = 0;
+                if (key !== '권총') arsenal[key].unlocked = false;
+            }
+
+            gameInput.value = '';
+            frameCount = 0;
+            gameActive = true;
+            
+            goldDisplay.innerText = gold;
+            livesDisplay.innerText = lives;
+            shieldDisplay.innerText = shields;
+            waveDisplay.innerText = wave;
+            gameOverScreen.style.display = 'none';
+            perkModal.style.display = 'none';
+            gameInput.focus();
+            
+            initGunListUI();
+            updateGunListUI();
+            updateGame();
+        }
+
+        initGunListUI();
+        updateGunListUI();
+    </script>
+</body>
+</html>
